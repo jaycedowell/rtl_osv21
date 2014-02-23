@@ -1,0 +1,23 @@
+################################################
+#                                              #
+# rtl_osv21.py WUnderground configuration file #
+#                                              #
+################################################
+
+# WUnderground account information
+ID Your_Id_Here
+PASSWORD Your_Password_Here
+
+# Include indoor temperature and humidity values in the values sent to the 
+# WUnderground PWS system?
+#includeIndoor False
+
+# Verbose output of the packet decoding process
+#verbose False
+
+# Full path to the rtl_sdr executable
+#rtlsdr rtl_sdr
+
+# Use timeout to control the rtl_sdr call
+# Note: Useful for running on a Raspberry Pi
+#useTimeout False
