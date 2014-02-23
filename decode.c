@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
+/* The version 2.1 and 3.0 sensors use a bit rate of 1,024 Hz which is
+   approximately 488 samples @ 1Ms/s.
+*/
 #define SMOOTH_WINDOW 488
 
 
-static PyObject *readFile(PyObject *self, PyObject *args) {
+static PyObject *readRTLFile(PyObject *self, PyObject *args) {
 	PyObject *ph, *output, *bits, *temp;
 	int i, j;
 	
@@ -43,10 +45,12 @@ static PyObject *readFile(PyObject *self, PyObject *args) {
 	long halfTime = 0;
 	int addBit;
 	
+	// Go!
 	unsigned char raw[2*SMOOTH_WINDOW];
 	i = fread(raw, 1, sizeof(raw), fh);
 	while( !feof(fh) ) {
 		for(j=0; j<SMOOTH_WINDOW; j++) {
+			// I/Q samples to power
 			real = ((float) raw[2*j+0]) - 127.0;
 			imag = ((float) raw[2*j+1]) - 127.0;
 			instPower = real*real + imag*imag;
@@ -67,7 +71,11 @@ static PyObject *readFile(PyObject *self, PyObject *args) {
 			edge = power - prevPower;
 			prevPower = power;
 		
-			// Timing
+			/* Timing
+			   NOTE:  Some of these values may need to be tweaked for v3.0
+			          sensors.  See: 
+			          http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf
+			*/
 			if( edge != 0 ) {
 				if( prevEdge < 0 ) {
 					prevEdge = dataCounter;
@@ -127,7 +135,7 @@ static PyObject *readFile(PyObject *self, PyObject *args) {
 			}
 		}
 		
-		// Read in the next sample
+		// Read in the next set of samples
 		i = fread(raw, 1, sizeof(raw), fh);
 	}
 	
@@ -140,8 +148,15 @@ static PyObject *readFile(PyObject *self, PyObject *args) {
 	return output;
 }
 
-PyDoc_STRVAR(readFile_doc, \
-"Given a file handle, read in the data and return a list of bits");
+PyDoc_STRVAR(readRTLFile_doc, \
+"Given an open file handle pointing to a RTL SDR recording, read in the data,\n\
+perform Manchester decoding, and return a list of bits (1 or 0) suitable for\n\
+identifying Oregon Scientific v2.1 and v3.0 sensor data.\n\
+\n\
+Based on:\n\
+ * http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf\n\
+ * http://www.disk91.com/2013/technology/hardware/oregon-scientific-sensors-with-raspberry-pi/\n\
+ ");
 
 
 /*
@@ -149,11 +164,13 @@ PyDoc_STRVAR(readFile_doc, \
 */
 
 static PyMethodDef DecodeMethods[] = {
-	{"readFile", (PyCFunction) readFile, METH_VARARGS, readFile_doc}, 
+	{"readFile", (PyCFunction) readRTLFile, METH_VARARGS, readRTLFile_doc}, 
 	{NULL, NULL, 0, NULL}
 };
 
-PyDoc_STRVAR(Decode_doc, "Read in OS v2.1 data");
+PyDoc_STRVAR(Decode_doc, \
+"Module to read in and Manchester decode Oregon Scientific v2.1 and v3.0 weather\n\
+station data.");
 
 
 /*
