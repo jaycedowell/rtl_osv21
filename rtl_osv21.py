@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import sys
 import time
 import numpy
@@ -34,6 +35,9 @@ def loadConfig():
 	parameters.
 	"""
 	
+	# RegEx for parsing the configuration file lines
+	configRE = re.compile(r'\s*:\s*')
+
 	# Initial values
 	config = {'verbose': False, 
 		  'rtlsdr': None,
@@ -54,7 +58,7 @@ def loadConfig():
 				continue
 				
 			## Update the dictionary
-			key, value = line.split(None, 1)
+			key, value = configRE.split(line, 1)
 			config[key] = value
 		fh.close()
 		
@@ -204,13 +208,15 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 				temp = 10*temp[2] + temp[1] + 0.1*temp[0]
 				if sum(packet[64:68]) > 0:
 					temp *= -1
-				print "-> ", temp*9.0/5.0 + 32, 'F'
-				
+				if verbose:
+					print "-> ", temp*9.0/5.0 + 32, 'F'
+					
 				#### Indoor relative humidity as a percentage
 				humi = nibbles2value(packet[68:76])
 				humi = 10*humi[1]+humi[0]
-				print "-> ", humi, '%'
-				
+				if verbose:
+					print "-> ", humi, '%'
+					
 				#### Indoor "comfort level"
 				comf = nibbles2value(packet[76:80])[0]
 				if comf == 0:
@@ -223,13 +229,15 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 					comf = 'wet'
 				else:
 					comf = "0x%X" % comf
-				print "-> ", comf
-				
+				if verbose:
+					print "-> ", comf
+					
 				#### Barometric pressure in mbar
 				baro = nibbles2value(packet[80:88])
 				baro = 10*baro[1] + baro[0] + 856
-				print "-> ", baro/33.8638866667, 'in-Hg'
-				
+				if verbose:
+					print "-> ", baro/33.8638866667, 'in-Hg'
+					
 				#### Pressure-based weather forecast
 				fore = nibbles2value(packet[92:96])[0]
 				if fore == 2:
@@ -242,41 +250,49 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 					fore = 'sunny'
 				else:
 					fore = "0x%X" % fore
-				print "-> ", fore
-		
+				if verbose:
+					print "-> ", fore
+					
 				wxData['indoortempf'] = round(temp*9.0/5.0 + 32, 2)
 				wxData['indoorhumidity'] = round(humi, 0)
 				wxData['baromin'] = round(baro/33.8638866667, 2)
+				wxData['comfort'] = comf
+				wxData['forecast'] = fore
 
 			elif sensor == '2d10':
 				##### Rainfall rate in mm/hr
 				rrate = nibbles2value(packet[52:64])
 				rrate = 10*rrate[2] + rrate[1] + 0.1*rrate[0]
-				print '=>', rrate/25.4, 'in/hr'
-
+				if verbose:
+					print '=>', rrate/25.4, 'in/hr'
+					
 				##### Total rainfall
 				rtotl = nibbles2value(packet[64:84])
 				rtotl = 1000*rtotl[4] + 100*rtotl[3] + 10*rtotl[2] + rtotl[1] + rtotl[0]
-				print '=>', rtotl/25.4, 'inches'
-			
+				if verbose:
+					print '=>', rtotl/25.4, 'inches'
+					
 				wxData['dailyrainin'] = round(rtotl/25.4, 2)
 
 			elif sensor == '3d00':
 				#### Wind direction in degrees (N = 0)
 				wdir = nibbles2value(packet[52:64])
 				wdir = 100*wdir[2] + 10*wdir[1] + wdir[0]
-				print '@>', wdir, 'deg'
-				
+				if verbose:
+					print '@>', wdir, 'deg'
+					
 				#### Gust wind speed in m/s
 				gspd = nibbles2value(packet[64:76])
 				gspd = 10*gspd[2] + gspd[1] + 0.1*gspd[0]
-				print '@>', gspd*2.23694, 'mph'
-				
+				if verbose:
+					print '@>', gspd*2.23694, 'mph'
+					
 				#### Average wind speed in m/s
 				aspd = nibbles2value(packet[76:88])
 				aspd = 10*aspd[2] + aspd[1] + 0.1*aspd[0]
-				print '@>', aspd*2.23694, 'mph'
-				
+				if verbose:
+					print '@>', aspd*2.23694, 'mph'
+					
 				wxData['windspeedmph'] = round(aspd*2.23694, 2)
 				wxData['windgustmph'] = round(gspd*2.23694, 2)
 				wxData['winddir'] = round(wdir, 0)
@@ -287,13 +303,15 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 				temp = 10*temp[2] + temp[1] + 0.1*temp[0]
 				if sum(packet[64:68]) > 0:
 					temp *= -1
-				print "-> ", temp*9.0/5.0 + 32, 'F'
-				
+				if verbose:
+					print "-> ", temp*9.0/5.0 + 32, 'F'
+					
 				#### Relative humidity as a percentage
 				humi = nibbles2value(packet[68:76])
 				humi = 10*humi[1]+humi[0]
-				print "-> ", humi, '%'
-		
+				if verbose:
+					print "-> ", humi, '%'
+					
 				wxData['temp2f'] = round(temp*9.0/5.0 + 32, 2)
 	
 			elif sensor == '1d30':
@@ -302,17 +320,20 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 				temp = 10*temp[2] + temp[1] + 0.1*temp[0]
 				if sum(packet[64:68]) > 0:
 					temp *= -1
-				print "-> ", temp*9.0/5.0 + 32, 'F'
-				
+				if verbose:
+					print "-> ", temp*9.0/5.0 + 32, 'F'
+					
 				#### Relative humidity as a percentage
 				humi = nibbles2value(packet[68:76])
 				humi = 10*humi[1]+humi[0]
-				print "-> ", humi, '%'
-	
+				if verbose:
+					print "-> ", humi, '%'
+					
 				#### Battery status?
 				batr = nibbles2value(packet[76:80])[0]
-				print "-> ", batr & 0x8
-		
+				if verbose:
+					print "-> ", batr & 0x8
+					
 				wxData['tempf'] = round(temp*9.0/5.0 + 32, 2)
 				wxData['humidity'] = round(humi, 0)
 				
@@ -406,11 +427,49 @@ def main(args):
 		else:
 			i += 1
 			
+	# Report
+	try:
+		inside = "%.1f F with %i%% humidity (%s)" % (wxData['indoortempf'], wxData['indoorhumidity'], wxData['comfort'])
+		print "Inside Conditions:"
+		print " "+inside
+	except KeyError, e:
+		print str(e)
+	try:
+		outside = "%.1f F with %i%% humidity (dew point %.1f F)" % (wxData['tempf'], wxData['humidity'], wxData['dewptf'])
+		print "Outside Conditions:"
+		print " "+outside
+	except KeyError, e:
+		print str(e)
+	try:
+		rain = "%.2f in since local midnight" % (wxData['dailyrainin']-prevRainFall,)
+		print "Rain:"
+		print " "+rain
+	except KeyError, e:
+		print str(e)
+	try:
+		wind = "Average %.1f mph with gusts of %.1f mph from %i degrees" % (wxData['windspeedmph'], wxData['windgustmph'], wxData['winddir'])
+		print "Wind:"
+		print " "+wind
+	except KeyError, e:
+		print str(e)
+	try:
+		forecast = "%s (%.2f in-Hz)" % (wxData['forecast'], wxData['baromin'])
+		print "Forecast:"
+		print " "+forecast
+	except KeyError, e:
+		print str(e)
+		
 	# Prepare the data for posting
 	## Account information and action
 	wxData['ID'] = config['ID']
 	wxData['PASSWORD'] = config['PASSWORD']
 	wxData['action'] = "updateraw"
+	## Strip out the comfort/forecast values
+	try:
+		del  wxData['comfort']
+                del wxData['forecast']
+	except KeyError:
+		pass
 	## Strip out the indoor values?
 	if not config['includeIndoor']:
 		try:

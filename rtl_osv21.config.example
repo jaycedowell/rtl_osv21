@@ -5,23 +5,23 @@
 ################################################
 
 # WUnderground account information
-ID Your_Id_Here
-PASSWORD Your_Password_Here
+ID: Your_Id_Here
+PASSWORD: Your_Password_Here
 
 # Include indoor temperature and humidity values in the values sent to the 
 # WUnderground PWS system?
-#includeIndoor False
+#includeIndoor: False
 
 # Verbose output of the packet decoding process
-#verbose True
+#verbose: True
 
 # Full path to the rtl_sdr executable
-#rtlsdr rtl_sdr
+#rtlsdr: rtl_sdr
 
 # Use timeout to control the rtl_sdr call
 # Note: Useful for running on a Raspberry Pi
-#useTimeout True
+#useTimeout: True
 
 # Retain the rlt_sdr data file after running?
-#retainFile True
+#retainFile: True
 
