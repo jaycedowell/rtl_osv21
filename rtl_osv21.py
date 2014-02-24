@@ -8,7 +8,6 @@ import time
 import numpy
 import urllib
 import struct
-from collections import deque
 from datetime import datetime, timedelta
 
 from _decode import readRTLFile
@@ -26,7 +25,7 @@ CONFIG_FILE = os.path.join(_BASE_PATH, 'rtl_osv21.config')
 ## State file for keeping track of rainfall
 STATE_FILE = os.path.join(_BASE_PATH, 'rtl_osv21.state')
 ## Temporary data file
-RTL_DATA_FILE = os.path.join(_BASE_PATH, 'rltsdr.dat')
+RTL_DATA_FILE = os.path.join(_BASE_PATH, 'rtlsdr_433MHz.dat')
 
 
 def loadConfig():
@@ -441,7 +440,10 @@ def main(args):
 	except KeyError, e:
 		print str(e)
 	try:
-		rain = "%.2f in since local midnight" % (wxData['dailyrainin']-prevRainFall,)
+		if prevRainFall is not None:
+			rain = "%.2f in since local midnight" % (wxData['dailyrainin']-prevRainFall,)
+		else:
+			rain = "%.2f in since last reset" % wxData['dailyrainin']
 		print "Rain:"
 		print " "+rain
 	except KeyError, e:
