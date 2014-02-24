@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Script to record 433MHz dat in search of packets from Oregon Scientific weather sensors.
+"""
+
 import os
 import re
 import sys

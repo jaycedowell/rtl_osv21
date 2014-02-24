@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Script to replay a saved 433MHz rtl_sdr file for testing purposes.
+"""
+
 import os
 import re
 import sys
@@ -46,7 +50,6 @@ def main(args):
 			i += 1
 			
 	# Report
-	print wxData
 	try:
 		inside = "%.1f F with %i%% humidity (%s)" % (wxData['indoortempf'], wxData['indoorhumidity'], wxData['comfort'])
 		print "Inside Conditions:"
