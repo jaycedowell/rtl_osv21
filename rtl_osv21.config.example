@@ -13,11 +13,15 @@ PASSWORD Your_Password_Here
 #includeIndoor False
 
 # Verbose output of the packet decoding process
-#verbose False
+#verbose True
 
 # Full path to the rtl_sdr executable
 #rtlsdr rtl_sdr
 
 # Use timeout to control the rtl_sdr call
 # Note: Useful for running on a Raspberry Pi
-#useTimeout False
+#useTimeout True
+
+# Retain the rlt_sdr data file after running?
+#retainFile True
+

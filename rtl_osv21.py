@@ -36,8 +36,9 @@ def loadConfig():
 	
 	# Initial values
 	config = {'verbose': False, 
-			  'rtlsdr': None, 
-			  'useTimeout': False, 
+		  'rtlsdr': None,
+		  'retainData': False,  
+		  'useTimeout': False, 
 	          'includeIndoor': False}
 
 	# Parse the file
@@ -60,6 +61,7 @@ def loadConfig():
 		# Boolean type conversions
 		config['verbose'] = bool(config['verbose'])
 		config['useTimeout'] = bool(config['useTimeout'])
+		config['retainData'] = bool(config['retainData'])
 		config['includeIndoor'] = bool(config['includeIndoor'])
 		
 	except IOError:
@@ -381,9 +383,13 @@ def main(args):
 	fh = open(RTL_DATA_FILE, 'rb')
 	bits = readRTLFile(fh)
 	fh.close()
-	
-	os.unlink(RTL_DATA_FILE)
-	
+
+	if not config['retainData']:
+		try:	
+			os.unlink(RTL_DATA_FILE)
+		except Exception, e:
+			print "ERROR: cannot remove data file; %s" % str(e)
+			
 	# Find the packets and save the output
 	i = 0
 	wxData = {'dateutc': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}
