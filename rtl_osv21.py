@@ -520,7 +520,7 @@ def main(args):
 			
 		## Send
 		uh = urllib.urlopen(url)
-		print "Post status: %s" % uh.read()
+		print "WUnderground PWS update status: %s" % uh.read()
 		uh.close()
 
 
