@@ -164,7 +164,7 @@ Based on:\n\
 */
 
 static PyMethodDef DecodeMethods[] = {
-	{"readFile", (PyCFunction) readRTLFile, METH_VARARGS, readRTLFile_doc}, 
+	{"readRTLFile", (PyCFunction) readRTLFile, METH_VARARGS, readRTLFile_doc}, 
 	{NULL, NULL, 0, NULL}
 };
 

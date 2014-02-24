@@ -354,7 +354,7 @@ def record433MHzData(filename, duration, rtlsdrPath=None, useTimeout=False):
 	if rtlsdrPath is None:
 		cmd = "rtl_sdr"
 	else:
-		cmd = rtlsdrpath
+		cmd = rtlsdrPath
 	cmd = "%s -f %i -s %i -n %i %s" % (cmd, frequency, sampleRate, samplesToRecord, filename)
 	if useTimeout:
 		timeoutPeriod = duration + 10
@@ -392,7 +392,7 @@ def main(args):
 		if sum(bits[i:i+32:2]) == 16 and sum(bits[i+1:i+1+32:2]) == 0:
 			packet = bits[i::2]
 			try:
-				wxData, ps = decodePacket(packet, wxData, verbose=config['verbose'])
+				wxData, ps = decodePacketv21(packet, wxData, verbose=config['verbose'])
 				i += 1
 			except IndexError:
 				i += 1
