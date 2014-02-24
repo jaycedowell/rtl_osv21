@@ -18,6 +18,9 @@ PASSWORD: Your_Password_Here
 # Full path to the rtl_sdr executable
 #rtlsdr: rtl_sdr
 
+# Recording duration in seconds
+#duration: 90
+
 # Use timeout to control the rtl_sdr call
 # Note: Useful for running on a Raspberry Pi
 #useTimeout: True
