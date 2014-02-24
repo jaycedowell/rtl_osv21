@@ -55,13 +55,13 @@ def main(args):
 		print "Inside Conditions:"
 		print " "+inside
 	except KeyError, e:
-		print str(e)
+		pass
 	try:
 		outside = "%.1f F with %i%% humidity (dew point %.1f F)" % (wxData['tempf'], wxData['humidity'], wxData['dewptf'])
 		print "Outside Conditions:"
 		print " "+outside
 	except KeyError, e:
-		print str(e)
+		pass
 	try:
 		if prevRainFall is not None:
 			rain = "%.2f in since local midnight" % (wxData['dailyrainin']-prevRainFall,)
@@ -70,19 +70,19 @@ def main(args):
 		print "Rain:"
 		print " "+rain
 	except KeyError, e:
-		print str(e)
+		pass
 	try:
 		wind = "Average %.1f mph with gusts of %.1f mph from %i degrees" % (wxData['windspeedmph'], wxData['windgustmph'], wxData['winddir'])
 		print "Wind:"
 		print " "+wind
 	except KeyError, e:
-		print str(e)
+		pass
 	try:
-		forecast = "%s (%.2f in-Hz)" % (wxData['forecast'], wxData['baromin'])
+		forecast = "%s (%.2f in-Hg)" % (wxData['forecast'], wxData['baromin'])
 		print "Forecast:"
 		print " "+forecast
 	except KeyError, e:
-		print str(e)
+		pass
 
 
 if __name__ == "__main__":

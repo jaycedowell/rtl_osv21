@@ -44,9 +44,10 @@ def loadConfig():
 	# Initial values
 	config = {'verbose': False, 
 		  'rtlsdr': None,
+		  'duration': 90.0, 
 		  'retainData': False,  
 		  'useTimeout': False, 
-	          'includeIndoor': False}
+		  'includeIndoor': False}
 
 	# Parse the file
 	try:
@@ -64,6 +65,9 @@ def loadConfig():
 			key, value = configRE.split(line, 1)
 			config[key] = value
 		fh.close()
+		
+		# Float type conversion
+		config['duration'] = float(config['duration'])
 		
 		# Boolean type conversions
 		config['verbose'] = bool(config['verbose'])
@@ -401,7 +405,7 @@ def main(args):
 	prevRainDate, prevRainFall = loadState()
 	
 	# Record some data
-	record433MHzData(RTL_DATA_FILE, 90, rtlsdrPath=config['rtlsdr'], useTimeout=config['useTimeout'])
+	record433MHzData(RTL_DATA_FILE, config['duration'], rtlsdrPath=config['rtlsdr'], useTimeout=config['useTimeout'])
 	
 	# Find the bits in the freshly recorded data and remove the file
 	fh = open(RTL_DATA_FILE, 'rb')
@@ -436,13 +440,13 @@ def main(args):
 		print "Inside Conditions:"
 		print " "+inside
 	except KeyError, e:
-		print str(e)
+		pass
 	try:
 		outside = "%.1f F with %i%% humidity (dew point %.1f F)" % (wxData['tempf'], wxData['humidity'], wxData['dewptf'])
 		print "Outside Conditions:"
 		print " "+outside
 	except KeyError, e:
-		print str(e)
+		pass
 	try:
 		if prevRainFall is not None:
 			rain = "%.2f in since local midnight" % (wxData['dailyrainin']-prevRainFall,)
@@ -451,19 +455,19 @@ def main(args):
 		print "Rain:"
 		print " "+rain
 	except KeyError, e:
-		print str(e)
+		pass
 	try:
 		wind = "Average %.1f mph with gusts of %.1f mph from %i degrees" % (wxData['windspeedmph'], wxData['windgustmph'], wxData['winddir'])
 		print "Wind:"
 		print " "+wind
 	except KeyError, e:
-		print str(e)
+		pass
 	try:
-		forecast = "%s (%.2f in-Hz)" % (wxData['forecast'], wxData['baromin'])
+		forecast = "%s (%.2f in-Hg)" % (wxData['forecast'], wxData['baromin'])
 		print "Forecast:"
 		print " "+forecast
 	except KeyError, e:
-		print str(e)
+		pass
 		
 	# Prepare the data for posting
 	## Account information and action
