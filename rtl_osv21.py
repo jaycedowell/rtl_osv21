@@ -87,6 +87,9 @@ def loadState():
 	Load in the state file needed to keep track of various values.
 	"""
 	
+	# RegEx for parsing the configuration file lines
+        configRE = re.compile(r'\s*:\s*')
+	
 	state = {}
 	
 	try:
@@ -103,7 +106,7 @@ def loadState():
 			## Update the dictionary
 			key, value = configRE.split(line, 1)
 			date, value = value.split(',', 1)
-			state[key] = (float(date), float(data))
+			state[key] = (float(date), float(value))
 		fh.close()
 		
 	except IOError:
@@ -121,15 +124,15 @@ def saveState(state):
 	
 	try:
 		fh = open(STATE_FILE, 'w')
-		fh.write("################################\n")
-		fh.write("#                              #\n")
-		fh.write("# rtl_osv21.py State File      #\n")
-		fh.write("#                              #\n")
+		fh.write("########################################\n")
+		fh.write("#                                      #\n")
+		fh.write("# rtl_osv21.py State File              #\n")
+		fh.write("#                                      #\n")
 		fh.write("# Updated: %s LT #\n" % tNowLocal)
-		fh.write("#                              #\n")
-		fh.write("################################\n")
+		fh.write("#                                      #\n")
+		fh.write("########################################\n")
 		
-		for key,(date,value) in state:
+		for key,(date,value) in state.iteritems():
 			fh.write("%s: %f,%f\n" % (key, date, value))
 			
 		fh.close()
@@ -499,8 +502,8 @@ def main(args):
 	except KeyError, e:
 		pass
 	try:
-		if prevRainFall is not None:
-			rain = "%.2f in since local midnight" % (wxData['dailyrainin']-prevRainFall,)
+		if 'dailyrainin' in state.keys():
+			rain = "%.2f in since local midnight" % (wxData['dailyrainin']-state['dailyrainin'][1],)
 		else:
 			rain = "%.2f in since last reset" % wxData['dailyrainin']
 		print "Rain:"
@@ -530,7 +533,7 @@ def main(args):
 	## Strip out the comfort/forecast values
 	try:
 		del wxData['comfort']
-        del wxData['forecast']
+        	del wxData['forecast']
 	except KeyError:
 		pass
 		
@@ -553,23 +556,23 @@ def main(args):
 		
 			### Update the state as needed
 			if tNowLocal - state['dailyrainin'][0] > 86400:
-				state['dailyrainin'] = [tNowLocal, wxData['dailyrainin']+prevRainfall]
+				state['dailyrainin'] = (tNowLocal, wxData['dailyrainin']+prevRainfall)
 				
 		else:
 			### Otherwise, make a new state file
-			tNowLocal = datetime.now()
-			tNowLocal = tNowLocal.replace(hour=0, minute=0, second=0, microsecond=0)
-			tNowLocal = float(tNowLocal.strftime("%s.%f"))
-			state['dailyrainin'] = [tNowLocal, wxData['dailyrainin']
+			tMidnightLocal = datetime.now()
+			tMidnightLocal = tMidnightLocal.replace(hour=0, minute=0, second=0, microsecond=0)
+			tMidnightLocal = float(tMidnightLocal.strftime("%s.%f"))
+			state['dailyrainin'] = (tMidnightLocal, wxData['dailyrainin'])
 			
 			### Cleanup so that nothing is sent to Wunderground about the rain
 			del wxData['dailyrainin']
 			
 	# Update the current state using wxData and save it to a file
 	for key in wxData:
-		if key in ('ID', 'PASSWORD', 'action', 'softwaretype', 'dailyrainin'):
+		if key in ('ID', 'PASSWORD', 'dateutc', 'action', 'softwaretype', 'dailyrainin'):
 			continue
-		state[key] = [tNowLocal, wxData[key]]
+		state[key] = (tNowLocal, wxData[key])
 	saveState(state)
 	
 	# Post to Wunderground for the PWS protocol (if there is something 
