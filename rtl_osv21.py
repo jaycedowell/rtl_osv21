@@ -468,7 +468,6 @@ def main(args):
 		
 	# Find the packets and save the output
 	i = 0
-	wxData = {'dateutc': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}
 	while i < len(bits)-32:
 		## Check for a valid preamble (and its logical negation counterpart)
 		if sum(bits[i:i+32:2]) == 16 and sum(bits[i+1:i+1+32:2]) == 0:
