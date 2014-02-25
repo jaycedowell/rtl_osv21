@@ -454,6 +454,9 @@ def main(args):
 	# Read in the previous state and pre-load the data dictionary.  This helps keep the 
 	# data stream sent to WUnderground "whole".
 	state = loadState()
+	tNowLocal = datetime.now()
+	tNowLocal = float(tNowLocal.strftime("%s.%f"))
+	
 	wxData = {'dateutc': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}
 	for key in state.keys():
 		if key in ('dailyrainin',):
@@ -526,7 +529,7 @@ def main(args):
 	
 	## Strip out the comfort/forecast values
 	try:
-		del  wxData['comfort']
+		del wxData['comfort']
         del wxData['forecast']
 	except KeyError:
 		pass
@@ -549,8 +552,6 @@ def main(args):
 			wxData['dailyrainin'] = wxData['dailyrainin'] if wxData['dailyrainin'] >= 0.0 else 0.0
 		
 			### Update the state as needed
-			tNowLocal = datetime.now()
-			tNowLocal = float(tNowLocal.strftime("%s.%f"))
 			if tNowLocal - state['dailyrainin'][0] > 86400:
 				state['dailyrainin'] = [tNowLocal, wxData['dailyrainin']+prevRainfall]
 				
@@ -564,9 +565,13 @@ def main(args):
 			### Cleanup so that nothing is sent to Wunderground about the rain
 			del wxData['dailyrainin']
 			
-	# Save the current state
+	# Update the current state using wxData and save it to a file
+	for key in wxData:
+		if key in ('ID', 'PASSWORD', 'action', 'softwaretype', 'dailyrainin'):
+			continue
+		state[key] = [tNowLocal, wxData[key]]
 	saveState(state)
-			
+	
 	# Post to Wunderground for the PWS protocol (if there is something 
 	#interesting to send)
 	if len(wxData.keys()) > 3:
