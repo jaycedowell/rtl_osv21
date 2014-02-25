@@ -41,7 +41,13 @@ def main(args):
 		if sum(bits[i:i+32:2]) == 16 and sum(bits[i+1:i+1+32:2]) == 0:
 			packet = bits[i::2]
 			try:
-				wxData, ps = decodePacketv21(packet, wxData, verbose=config['verbose'])
+				packet = bits[i::2]
+				valid, wxData, ps = decodePacketv21(packet, wxData, verbose=config['verbose'])
+				
+				### If the packet isn't valid, try the logical inverse that comes with v2.1
+				if not valid:
+					packet = [1-b for b in bits[i+1::2]]
+					valid, wxData, ps = decodePacketv21(packet, wxData, verbose=config['verbose'])
 				i += 1
 			except IndexError:
 				i += 1

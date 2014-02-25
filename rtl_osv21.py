@@ -84,33 +84,60 @@ def loadConfig():
 
 def loadState():
 	"""
-	Load in the state file needed to keep track of the daily rain fall.
+	Load in the state file needed to keep track of various values.
 	"""
+	
+	state = {}
 	
 	try:
 		fh = open(STATE_FILE, 'r')
-		line = fh.readline()
+		for line in fh:
+			line = line.replace('\n', '')
+			## Skip blank lines
+			if len(line) < 3:
+				continue
+			## Skip comments
+			if line[0] == '#':
+				continue
+				
+			## Update the dictionary
+			key, value = configRE.split(line, 1)
+			date, value = value.split(',', 1)
+			state[key] = (float(date), float(data))
 		fh.close()
-	
-		date, rainfall = line.split(',', 1)
-		date = float(date)
-		rainfall = round(float(rainfall), 2)
-	except IOError:
-		date, rainfall = None, None
 		
-	return date, rainfall	
+	except IOError:
+		pass
+		
+	return state
 
 
-def saveRainfall(date, rainfall=None):
+def saveState(state):
 	"""
-	Save the state file needed to keep track of the daily rain fall.
+	Save the state file needed to keep track of various.
 	"""
-
-	if rainfall is not None:
+	
+	tNowLocal = datetime.now()
+	
+	try:
 		fh = open(STATE_FILE, 'w')
-		fh.write("%s,%s\n" % (str(date), str(rainfall)))
+		fh.write("################################\n")
+		fh.write("#                              #\n")
+		fh.write("# rtl_osv21.py State File      #\n")
+		fh.write("#                              #\n")
+		fh.write("# Updated: %s LT #\n" % tNowLocal)
+		fh.write("#                              #\n")
+		fh.write("################################\n")
+		
+		for key,(date,value) in state:
+			fh.write("%s: %f,%f\n" % (key, date, value))
+			
 		fh.close()
-	return True
+		
+		return True
+		
+	except IOError:
+		return False
 
 
 def nibbles2value(nibbles):
@@ -151,8 +178,9 @@ def checksum(bits):
 def decodePacketv21(packet, wxData=None, verbose=False):
 	"""
 	Given a sequence of bits try to find a valid Oregon Scientific v2.1 
-	packet.  This function returns a dictionary of values (keyed off the 
-	Wunderground PWS keywords) and the number of bytes used.
+	packet.  This function returns a status code of whether or not the packet
+	is valid, a dictionary of values (keyed off the WUnderground PWS 
+	keywords) and the number of bytes used.
 	
 	Supported Sensors:
 	  * 5D60 - BHTR968 - Indoor temperature/humidity/pressure
@@ -169,6 +197,9 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 	if wxData is None:
 		wxData = {}
  		
+ 	# Packet validity
+ 	validPacket = False
+ 	
  	# Check for a valid sync word.  If data has been passed to this function 
  	# then it already has a valid preamble.
 	if nibbles2value(packet[16:20])[0] == 10:
@@ -260,6 +291,7 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 				if verbose:
 					print "-> ", fore
 					
+				validPacket = True
 				wxData['indoortempf'] = round(temp*9.0/5.0 + 32, 2)
 				wxData['indoorhumidity'] = round(humi, 0)
 				wxData['baromin'] = round(baro/33.8638866667, 2)
@@ -279,6 +311,7 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 				if verbose:
 					print '=>', rtotl/25.4, 'inches'
 					
+				validPacket = True
 				wxData['dailyrainin'] = round(rtotl/25.4, 2)
 
 			elif sensor == '3d00':
@@ -300,6 +333,7 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 				if verbose:
 					print '@>', aspd*2.23694, 'mph'
 					
+				validPacket = True
 				wxData['windspeedmph'] = round(aspd*2.23694, 2)
 				wxData['windgustmph'] = round(gspd*2.23694, 2)
 				wxData['winddir'] = round(wdir, 0)
@@ -319,6 +353,7 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 				if verbose:
 					print "-> ", humi, '%'
 					
+				validPacket = True
 				wxData['temp2f'] = round(temp*9.0/5.0 + 32, 2)
 	
 			elif sensor == '1d30':
@@ -341,15 +376,16 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 				if verbose:
 					print "-> ", batr & 0x8
 					
-				wxData['tempf'] = round(temp*9.0/5.0 + 32, 2)
-				wxData['humidity'] = round(humi, 0)
-				
-				##### Computed dew point
+				##### Computed dew point from the Magnus formula
+				##### See: http://en.wikipedia.org/wiki/Dew_point
 				b = 17.67
 				c = 243.5
 				dewpt = numpy.log(humi/100.0) + b*temp/(c + temp)
 				dewpt = c*dewpt / (b - dewpt)
-		
+					
+				validPacket = True
+				wxData['tempf'] = round(temp*9.0/5.0 + 32, 2)
+				wxData['humidity'] = round(humi, 0)
 				wxData['dewptf'] = round(dewpt*9.0/5.0 + 32, 2)
 	else:
 		ds = 0
@@ -359,8 +395,8 @@ def decodePacketv21(packet, wxData=None, verbose=False):
 	ds += 16
 	ds *= 2
 	
-	# Return the data and the packet size
-	return wxData, ds
+	# Return the packet validity, data dictionary, and the packet size
+	return validPacket, wxData, ds
 
 
 def record433MHzData(filename, duration, rtlsdrPath=None, useTimeout=False):
@@ -401,9 +437,6 @@ def main(args):
 	# Read in the configuration file
 	config = loadConfig()
 	
-	# Read in the rainfall state file
-	prevRainDate, prevRainFall = loadState()
-	
 	# Record some data
 	record433MHzData(RTL_DATA_FILE, config['duration'], rtlsdrPath=config['rtlsdr'], useTimeout=config['useTimeout'])
 	
@@ -418,16 +451,31 @@ def main(args):
 		except Exception, e:
 			print "ERROR: cannot remove data file; %s" % str(e)
 			
+	# Read in the previous state and pre-load the data dictionary.  This helps keep the 
+	# data stream sent to WUnderground "whole".
+	state = loadState()
+	wxData = {'dateutc': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}
+	for key in state.keys():
+		if key in ('dailyrainin',):
+			continue
+		wxData[key] = state[key][1]
+		
 	# Find the packets and save the output
 	i = 0
 	wxData = {'dateutc': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}
 	while i < len(bits)-32:
 		## Check for a valid preamble (and its logical negation counterpart)
 		if sum(bits[i:i+32:2]) == 16 and sum(bits[i+1:i+1+32:2]) == 0:
-			packet = bits[i::2]
 			try:
-				wxData, ps = decodePacketv21(packet, wxData, verbose=config['verbose'])
+				packet = bits[i::2]
+				valid, wxData, ps = decodePacketv21(packet, wxData, verbose=config['verbose'])
+				
+				### If the packet isn't valid, try the logical inverse that comes with v2.1
+				if not valid:
+					packet = [1-b for b in bits[i+1::2]]
+					valid, wxData, ps = decodePacketv21(packet, wxData, verbose=config['verbose'])
 				i += 1
+				
 			except IndexError:
 				i += 1
 					
@@ -470,44 +518,54 @@ def main(args):
 		pass
 		
 	# Prepare the data for posting
-	## Account information and action
+	## Account information, software type, and action
 	wxData['ID'] = config['ID']
 	wxData['PASSWORD'] = config['PASSWORD']
+	wxData['softwaretype'] = "rtl_osv21"
 	wxData['action'] = "updateraw"
+	
 	## Strip out the comfort/forecast values
 	try:
 		del  wxData['comfort']
-                del wxData['forecast']
+        del wxData['forecast']
 	except KeyError:
 		pass
-	## Strip out the indoor values?
+		
+	## Strip out the indoor values if requested
 	if not config['includeIndoor']:
 		try:
 			del wxData['indoortempf']
 			del wxData['indoorhumidity']
 		except KeyError:
 			pass
-	## Update the rain total?
+			
+	## Update the daily rain total
 	if 'dailyrainin' in wxData.keys():
-		if prevRainDate is not None:
-			### If there is a state file already
-			wxData['dailyrainin'] -= prevRainFall
+		if 'dailyrainin' in state.keys():
+			### We have a reference to use in order to get the daily amount
+			prevRainfall = 1.0*state['dailyrainin'][1]
+			
+			wxData['dailyrainin'] -= prevRainfall
 			wxData['dailyrainin'] = wxData['dailyrainin'] if wxData['dailyrainin'] >= 0.0 else 0.0
 		
-			### Update the state file as needed
+			### Update the state as needed
 			tNowLocal = datetime.now()
 			tNowLocal = float(tNowLocal.strftime("%s.%f"))
-			if tNowLocal - prevRainDate > 86400:
-				saveRainfall(tNowLocal, wxData['dailyrainin']+prevRainFall)
+			if tNowLocal - state['dailyrainin'][0] > 86400:
+				state['dailyrainin'] = [tNowLocal, wxData['dailyrainin']+prevRainfall]
+				
 		else:
 			### Otherwise, make a new state file
 			tNowLocal = datetime.now()
 			tNowLocal = tNowLocal.replace(hour=0, minute=0, second=0, microsecond=0)
 			tNowLocal = float(tNowLocal.strftime("%s.%f"))
-			saveRainfall(tNowLocal, wxData['dailyrainin'])
+			state['dailyrainin'] = [tNowLocal, wxData['dailyrainin']
 			
 			### Cleanup so that nothing is sent to Wunderground about the rain
 			del wxData['dailyrainin']
+			
+	# Save the current state
+	saveState(state)
 			
 	# Post to Wunderground for the PWS protocol (if there is something 
 	#interesting to send)
