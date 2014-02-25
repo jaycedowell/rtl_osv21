@@ -462,10 +462,13 @@ def main(args):
 	
 	wxData = {'dateutc': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}
 	for key in state.keys():
-		if key in ('dailyrainin',):
+		## Skip rain and wind
+		if key in ('dailyrainin','windgustmph','windspeedmph','windir'):
 			continue
-		wxData[key] = state[key][1]
-		
+		## Only use "recent" values if they exist
+		if (tNowLocal - state[key][0]) <= 3600.0:
+			wxData[key] = state[key][1]
+			
 	# Find the packets and save the output
 	i = 0
 	while i < len(bits)-32:
