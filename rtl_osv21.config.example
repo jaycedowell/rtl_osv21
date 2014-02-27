@@ -16,7 +16,7 @@ PASSWORD: Your_Password_Here
 #verbose: True
 
 # Station elevation in meters
-#elevation 0
+#elevation: 0
 
 # Full path to the rtl_sdr executable
 #rtlsdr: rtl_sdr

@@ -61,7 +61,7 @@ def record433MHzData(filename, duration, rtlsdrPath=None, useTimeout=False):
 
 def main(args):
 	# Read in the configuration file
-	config = loadConfig()
+	config = loadConfig(CONFIG_FILE)
 	
 	# Record some data
 	record433MHzData(RTL_DATA_FILE, config['duration'], rtlsdrPath=config['rtlsdr'], useTimeout=config['useTimeout'])
@@ -170,7 +170,7 @@ def main(args):
 	db.writeData(time.time(), output)
 	
 	# Uplodd
-	wxUploader(config['ID'], config['PASSWORD'], output, archive=db, 
+	wuUploader(config['ID'], config['PASSWORD'], output, archive=db, 
 				includeIndoor=config['includeIndoor'], verbose=config['verbose'])
 
 

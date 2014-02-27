@@ -13,7 +13,7 @@ __all__ = ["length_m2ft", "length_ft2m", "length_mm2in", "length_in2mm",
 		   "speed_ms2mph", "speed_mph2ms", 
 		   "temp_C2F", "temp_F2C", 
 		   "pressure_mb2inHg", "pressure_inHg2mb", 
-		   "computeDewPoint", "computeSeaLevelPressure", 
+		   "computeDewPoint", "computeWindchill", "computeSeaLevelPressure", 
 		   "loadConfig", "wuUploader", 
 		   "__version__", "__all__"]
 
@@ -23,14 +23,14 @@ def length_m2ft(value):
 	Convert a length in meters to feet.
 	"""
 	
-	return value/3.28084
+	return value*3.28084
 	
-def length_m2ft(value):
+def length_ft2m(value):
 	"""
 	Convert a length in feet to meters.
 	"""
 	
-	return value*3.28084
+	return value/3.28084
 	
 def length_mm2in(value):
 	"""
@@ -195,7 +195,7 @@ def computeSeaLevelPressure(press, elevation, inHg=False, ft=False):
 	M  = 28.9644 		# lb/lbmol
 	Rs = 8.9494596e4	# lb ft^2/lbmol/K/s/s	
 	
-	P = Pb * (Tb / (Tb+Lb*elevation))**(-g0*M/(Rs*Lb))
+	press *= (Tb / (Tb+Lb*elevation))**(-g0*M/(Rs*Lb))
 	
 	# Convert back to inches of mercury, if needed
 	if not inHg:
@@ -299,6 +299,8 @@ def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=Fa
 		pwsData['windspeedmph'] = speed_ms2mph( data['average'] )
 		pwsData['windgustmph'] = speed_ms2mph( data['gust'] )
 		pwsData['winddir'] = data['direction']
+	except KeyError:
+		pass
 		
 	## Add in the rain values
 	if archive is not None:
@@ -306,10 +308,16 @@ def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=Fa
 		tUTCMidnight = (int(time.time()) / 86400) * 86400
 		localOffset = int(round(float(datetime.utcnow().strftime("%s.%f")) - time.time(), 1))
 		tLocalMidnight = tUTCMidnight + localOffset
-	
+		if tLocalMidnight > time.time():
+			tLocalMidnight -= 86400
+			
 		### Get the rainfall from an hour ago and from local midnight
-		rainHour = archive.getData(age=3600)[1]['rainfall']
-		rainDay  = archive.getData(age=time.time()-tLocalMidnight)[1]['rainfall']
+		ts, entry = archive.getData(age=3600)
+		print time.time()-ts
+		rainHour = entry['rainfall']
+		ts, entry  = archive.getData(age=time.time()-tLocalMidnight)
+		print time.time()-ts, time.time() - tLocalMidnight
+		rainDay = entry['rainfall']
 		
 		### Calculate
 		try:
@@ -320,7 +328,7 @@ def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=Fa
 			if rainDay < 0:
 				rainDay = 0.0
 			pwsData['rainin'] = length_mm2in( rainHour )
-			pwsData['dailyrainin'] = lengh_mm2in( rainDay )
+			pwsData['dailyrainin'] = length_mm2in( rainDay )
 		except KeyError:
 			pass
 			

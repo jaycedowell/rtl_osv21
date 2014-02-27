@@ -75,7 +75,11 @@ class Archive(object):
 			tLookback = tNow - age
 			self._cursor.execute('SELECT * FROM wx WHERE dateTime >= %i ORDER BY dateTime' % tLookback)
 		row = self._cursor.fetchone()
-		
+
+		# Check for an empty database
+		if row is None:
+			return 0, {}
+			
 		# Convert it to the "standard" dictionary format
 		timestamp = row['dateTime']
 		output = {'temperature': row['outTemp'], 'humidity': row['outHumidity'], 
@@ -84,7 +88,7 @@ class Archive(object):
 		          'indoorDewpoint': row['inDewpoint'], 'pressure': row['barometer'], 
 		          'rainrate': row['rainRate'], 'rainfall': row['rain'], 
 		          'altTemperature': [], 'altHumdity': [], 'altDewpoint': []}
-		for i in xrange(1, 4):
+		for i in xrange(1, 5):
 			output['altTemperature'].append( row['outTemp%i' % i] if row['outTemp%i' % i] != -99 else None )
 			output['altHumdity'].append( row['outHumidity%i' % i] if row['outHumidity%i' % i] != -99 else None )
 			output['altDewpoint'].append( row['outDewpoint%i' % i] if row['outDewpoint%i' % i] != -99 else None )
@@ -99,7 +103,6 @@ class Archive(object):
 			self.open()
 		
 		# Build up the values to insert
-		print data
 		cNames = ['dateTime', 'usUnits']
 		dValues = [int(timestamp), 0]
 		for key in data.keys():
