@@ -7,11 +7,12 @@ WUnderground PWS site.
 Requirements
 ------------
  * Python >=2.7 and <3.0
+ * sqlite3
  * rtl_sdr from http://sdr.osmocom.org/trac/wiki/rtl-sdr
 
 Usage
 -----
-  1) Build the _decode.so extension via 'make'
+  1) Build the decoder.so extension via 'make'
   
   2) Update the configuration file 'rtl_osv21.config'
   
@@ -28,6 +29,7 @@ Supported Sensors
 The data formats used for these sensors come from:
  * http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf
  * http://www.disk91.com/2013/technology/hardware/oregon-scientific-sensors-with-raspberry-pi/
+ * http://www.mattlary.com/2012/06/23/weather-station-project/
  * Trial and error
 
 Presumably other sensors that transmit v2.1 or v3.0 sensors are also supported if you 

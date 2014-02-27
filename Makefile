@@ -2,11 +2,11 @@ CFLAGS = $(shell python-config --cflags)
 
 LDFLAGS = $(shell python-config --ldflags)
 
-_decode.so: decode.o
-	$(CC) -o _decode.so decode.o -lm -shared $(LDFLAGS)
+decoder.so: decoder.o
+	$(CC) -o decoder.so decoder.o -lm -shared $(LDFLAGS)
 
-decode.o: decode.c
-	$(CC) -c $(CFLAGS) -fPIC -o decode.o decode.c -O3
+decoder.o: decoder.c
+	$(CC) -c $(CFLAGS) -fPIC -o decoder.o decoder.c -O3
 
 clean:
-	rm -rf decode.o _decode.so
+	rm -rf decoder.o decoder.so

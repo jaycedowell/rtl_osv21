@@ -14,20 +14,17 @@ import urllib
 import struct
 from datetime import datetime, timedelta
 
-from _decode import readRTLFile
-from rtl_osv21 import loadConfig, loadState, decodePacketv21
+from decoder import readRTLFile
+from parser import parsePacketv21
+from utils import loadConfig, length_mm2in, temp_C2F, pressure_mb2inHg, speed_ms2mph
+from utils import computeDewPoint, computeWindchill, computeSeaLevelPressure
+from rtl_osv21 import CONFIG_FILE
 
 
 def main(args):
 	# Read in the configuration file
-	config = loadConfig()
+	config = loadConfig(CONFIG_FILE)
 	
-	# Force verbose output
-	config['verbose'] = True
-	
-	# Read in the rainfall state file
-	prevRainDate, prevRainFall = loadState()
-
 	# Find the bits in the freshly recorded data and remove the file
 	fh = open(args[0], 'rb')
 	bits = readRTLFile(fh)
@@ -35,60 +32,89 @@ def main(args):
 	
 	# Find the packets and save the output
 	i = 0
-	wxData = {'dateutc': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}
+	output = {}
 	while i < len(bits)-32:
 		## Check for a valid preamble (and its logical negation counterpart)
 		if sum(bits[i:i+32:2]) == 16 and sum(bits[i+1:i+1+32:2]) == 0:
-			packet = bits[i::2]
-			try:
-				packet = bits[i::2]
-				valid, wxData, ps = decodePacketv21(packet, wxData, verbose=config['verbose'])
-				
-				### If the packet isn't valid, try the logical inverse that comes with v2.1
-				if not valid:
-					packet = [1-b for b in bits[i+1::2]]
-					valid, wxData, ps = decodePacketv21(packet, wxData, verbose=config['verbose'])
-				i += 1
-			except IndexError:
-				i += 1
-					
-		else:
-			i += 1
+			packet1 = bits[i+0::2]
+			packet2 = bits[i+1::2]
 			
+			try:
+				valid, sensorName, channel, sensorData = parsePacketv21(packet1, verbose=True)
+				if not valid:
+					valid, sensorName, channel, sensorData = parsePacketv21(packet2, verbose=True)
+					
+				if valid:
+					if sensorName in ('BHTR968', 'THGR268', 'THGR968'):
+						sensorData['dewpoint'] = computeDewPoint(sensorData['temperature'], sensorData['humidity'])
+					if sensorName in ('BHTR968',):
+						sensorData['pressure'] = computeSeaLevelPressure(sensorData['pressure'], config['elevation'])
+					if sensorName == 'BHTR968':
+						sensorData['indoorTemperature'] = sensorData['temperature']
+						del sensorData['temperature']
+						sensorData['indoorHumidity'] = sensorData['humidity']
+						del sensorData['humidity']
+						sensorData['indoorDewpoint'] = sensorData['dewpoint']
+						del sensorData['dewpoint']
+						
+					for key in sensorData.keys():
+						if key in ('temperature', 'humidity', 'dewpoint'):
+							if sensorName == 'THGR968':
+								output[key] = sensorData[key]
+							else:
+								try:
+									output['alt%s' % key.capitalize()][channel-1] = sensorData[key]
+								except KeyError:
+									output['alt%s' % key.capitalize()] = [None, None, None, None]
+									output['alt%s' % key.capitalize()][channel-1] = sensorData[key]
+						else:
+							output[key] = sensorData[key]
+							
+			except IndexError:
+				pass
+		i += 1
+		
+	# Compute combined quantities
+	if 'temperature' in output.keys() and 'average' in output.keys():
+		output['windchill'] = computeWindchill(output['temperature'], output['average'])
+		
 	# Report
-	try:
-		inside = "%.1f F with %i%% humidity (%s)" % (wxData['indoortempf'], wxData['indoorhumidity'], wxData['comfort'])
-		print "Inside Conditions:"
-		print " "+inside
-	except KeyError, e:
-		pass
-	try:
-		outside = "%.1f F with %i%% humidity (dew point %.1f F)" % (wxData['tempf'], wxData['humidity'], wxData['dewptf'])
-		print "Outside Conditions:"
-		print " "+outside
-	except KeyError, e:
-		pass
-	try:
-		if prevRainFall is not None:
-			rain = "%.2f in since local midnight" % (wxData['dailyrainin']-prevRainFall,)
-		else:
-			rain = "%.2f in since last reset" % wxData['dailyrainin']
-		print "Rain:"
-		print " "+rain
-	except KeyError, e:
-		pass
-	try:
-		wind = "Average %.1f mph with gusts of %.1f mph from %i degrees" % (wxData['windspeedmph'], wxData['windgustmph'], wxData['winddir'])
+	if 'indoorTemperature' in output.keys():
+		print "Indoor Conditions:"
+		print " -> %.1f F with %i%% humidity (%s)" % (temp_C2F(output['indoorTemperature']), output['indoorHumidity'], output['comfortLevel'])
+		print " -> dew point is %.1f F" % (temp_C2F(output['indoorDewpoint']),)
+		print " -> barometric pressure is %.2f in-Hg" % pressure_mb2inHg(output['pressure'])
+		print " "
+	
+	if 'temperature' in output.keys():
+		print "Outdoor Conditions:"
+		print " -> %.1f F with %i%% humidity" % (temp_C2F(output['temperature']), output['humidity'])
+		print " -> dew point is %.1f F" % (temp_C2F(output['dewpoint']),)
+		if 'windchill' in output.keys():
+			print " -> windchill is %.1f F" % (temp_C2F(output['windchill']),)
+		if 'altTemperature' in output.keys():
+			for i in xrange(4):
+				if output['altTemperature'][i] is not None:
+					t, h, d = output['altTemperature'][i], output['altHumidity'][i], output['altDewpoint'][i]
+					print "    #%i: %.1f F with %i%% humidity" % (i+1, temp_C2F(t), h)
+					print "         dew point is %.1f F" % (temp_C2F(d),)
+		print " "
+		
+	if 'rainrate' in output.keys():
+		print "Rainfall:"
+		print " -> %.2f in/hr, %.2f in total" % (length_mm2in(output['rainrate']), length_mm2in(output['rainfall']))
+		print " "
+		
+	if 'average' in output.keys():
 		print "Wind:"
-		print " "+wind
-	except KeyError, e:
-		pass
-	try:
-		forecast = "%s (%.2f in-Hg)" % (wxData['forecast'], wxData['baromin'])
+		print "-> average %.1f mph @ %i degrees" % (speed_ms2mph(output['average']), output['direction'])
+		print "-> gust %.1f mph" % speed_ms2mph(output['gust'])
+		print " "
+	
+	if 'forecast' in output.keys():
 		print "Forecast:"
-		print " "+forecast
-	except KeyError, e:
-		pass
+		print " -> %s" % output['forecast']
+		print " "
 
 
 if __name__ == "__main__":

@@ -163,12 +163,12 @@ Based on:\n\
   Module Setup - Function Definitions and Documentation
 */
 
-static PyMethodDef DecodeMethods[] = {
+static PyMethodDef DecoderMethods[] = {
 	{"readRTLFile", (PyCFunction) readRTLFile, METH_VARARGS, readRTLFile_doc}, 
 	{NULL, NULL, 0, NULL}
 };
 
-PyDoc_STRVAR(Decode_doc, \
+PyDoc_STRVAR(Decoder_doc, \
 "Module to read in and Manchester decode Oregon Scientific v2.1 and v3.0 weather\n\
 station data.");
 
@@ -177,11 +177,11 @@ station data.");
   Module Setup - Initialization
 */
 
-PyMODINIT_FUNC init_decode(void) {
+PyMODINIT_FUNC initdecoder(void) {
 	PyObject *m;
 
 	// Module definitions and functions
-	m = Py_InitModule3("_decode", DecodeMethods, Decode_doc);
+	m = Py_InitModule3("decoder", DecoderMethods, Decoder_doc);
 	
 	// Version and revision information
 	PyModule_AddObject(m, "__version__", PyString_FromString("0.1"));
