@@ -4,6 +4,9 @@ Various utility functions needed by rtl_osv21.py
 
 import re
 import math
+import time
+import urllib
+from datetime import datetime
 
 __version__ = "0.1"
 __all__ = ["length_m2ft", "length_ft2m", "length_mm2in", "length_in2mm", 
@@ -11,7 +14,7 @@ __all__ = ["length_m2ft", "length_ft2m", "length_mm2in", "length_in2mm",
 		   "temp_C2F", "temp_F2C", 
 		   "pressure_mb2inHg", "pressure_inHg2mb", 
 		   "computeDewPoint", "computeSeaLevelPressure", 
-		   "loadConfig", 
+		   "loadConfig", "wuUploader", 
 		   "__version__", "__all__"]
 
 
@@ -251,3 +254,96 @@ def loadConfig(filename):
 		
 	# Done
 	return config
+
+
+def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=False):
+	"""
+	Upload a collection of data to the WUnderground PWD service.
+	"""
+	
+	# Wunderground PWS Base URL
+	PWS_BASE_URL = "http://weatherstation.wunderground.com/weatherstation/updateweatherstation.php"
+	
+	# Data dictionary to upload
+	pwsData = {}
+	
+	# Prepare the data for posting
+	## Account information, software type, and action
+	pwsData['ID'] = id
+	pwsData['PASSWORD'] = password
+	pwsData['softwaretype'] = "rtl_osv21"
+	pwsData['action'] = "updateraw"
+	
+	## Add in the outdoor temperature/humidity values
+	try:
+		pwsData['tempf'] = temp_C2F( data['temperature'] )
+		pwsData['humidity'] = data['humidity']
+		pwsData['dewptf'] = data['dewpoint']
+	except KeyError:
+		pass
+	j = 2
+	for i in xrange(4):
+		try:
+			t = data['altTemperature'][i]
+			if t is None:
+				continue
+			pwsData['tempf%i' % j] = temp_C2F( t )
+		except KeyError:
+			pass
+			
+	## Add in the barometric pressure
+	pwsData['baromin'] = pressure_mb2inHg( data['pressure'] )
+	
+	## Add in the wind values
+	try:
+		pwsData['windspeedmph'] = speed_ms2mph( data['average'] )
+		pwsData['windgustmph'] = speed_ms2mph( data['gust'] )
+		pwsData['winddir'] = data['direction']
+		
+	## Add in the rain values
+	if archive is not None:
+		### Ouch...
+		tUTCMidnight = (int(time.time()) / 86400) * 86400
+		localOffset = int(round(float(datetime.utcnow().strftime("%s.%f")) - time.time(), 1))
+		tLocalMidnight = tUTCMidnight + localOffset
+	
+		### Get the rainfall from an hour ago and from local midnight
+		rainHour = archive.getData(age=3600)[1]['rainfall']
+		rainDay  = archive.getData(age=time.time()-tLocalMidnight)[1]['rainfall']
+		
+		### Calculate
+		try:
+			rainHour = data['rainfall'] - rainHour
+			if rainHour < 0:
+				rainHour = 0.0
+			rainDay = data['rainfall'] - rainDay
+			if rainDay < 0:
+				rainDay = 0.0
+			pwsData['rainin'] = length_mm2in( rainHour )
+			pwsData['dailyrainin'] = lengh_mm2in( rainDay )
+		except KeyError:
+			pass
+			
+	## Add in the indoor values if requested
+	if includeIndoor:
+		try:
+			pwsData['indoortempf'] =  temp_C2F( data['indoorTemperature'] )
+			pwsData['indoorhumidity'] = data['indoorHumidity']
+		except KeyError:
+			pass
+			
+	# Post to Wunderground for the PWS protocol (if there is something 
+	# interesting to send)
+	if len(pwsData.keys()) > 4:
+		## Convert to a GET-safe string
+		pwsData = urllib.urlencode(pwsData)
+		url = "%s?%s" % (PWS_BASE_URL, pwsData)
+		if verbose:
+			print url
+			
+		## Send
+		uh = urllib.urlopen(url)
+		print "WUnderground PWS update status: %s" % uh.read()
+		uh.close()
+		
+	return True

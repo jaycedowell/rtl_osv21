@@ -29,6 +29,9 @@ class Archive(object):
 				 
 	def __init__(self):
 		self._dbName = os.path.join(os.path.dirname(__file__), 'archive', 'wx-data.db')
+		if not os.path.exists(self._dbName):
+			raise RuntimeError("Archive database not found")
+			
 		self.open()
 		
 	def dict_factory(self, cursor, row):
