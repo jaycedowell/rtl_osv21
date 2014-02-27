@@ -279,7 +279,7 @@ def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=Fa
 	try:
 		pwsData['tempf'] = temp_C2F( data['temperature'] )
 		pwsData['humidity'] = data['humidity']
-		pwsData['dewptf'] = data['dewpoint']
+		pwsData['dewptf'] = temp_C2F( data['dewpoint'] )
 	except KeyError:
 		pass
 	j = 2

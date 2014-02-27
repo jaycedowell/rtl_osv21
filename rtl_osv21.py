@@ -169,7 +169,7 @@ def main(args):
 	# Save to the database
 	db.writeData(time.time(), output)
 	
-	# Uplodd
+	# Upload
 	wuUploader(config['ID'], config['PASSWORD'], output, archive=db, 
 				includeIndoor=config['includeIndoor'], verbose=config['verbose'])
 
