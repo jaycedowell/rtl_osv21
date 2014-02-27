@@ -272,6 +272,7 @@ def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=Fa
 	pwsData['ID'] = id
 	pwsData['PASSWORD'] = password
 	pwsData['softwaretype'] = "rtl_osv21"
+	pwsData['dateutc'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 	pwsData['action'] = "updateraw"
 	
 	## Add in the outdoor temperature/humidity values
@@ -287,7 +288,7 @@ def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=Fa
 			t = data['altTemperature'][i]
 			if t is None:
 				continue
-			pwsData['tempf%i' % j] = temp_C2F( t )
+			pwsData['temp%if' % j] = temp_C2F( t )
 		except KeyError:
 			pass
 			
