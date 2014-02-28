@@ -313,10 +313,10 @@ def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=Fa
 			tLocalMidnight -= 86400
 			
 		### Get the rainfall from an hour ago and from local midnight
-		ts, entry = archive.getData(age=3600)
+		ts, entry = archive.getData(age=3660)
 		print time.time()-ts
 		rainHour = entry['rainfall']
-		ts, entry  = archive.getData(age=time.time()-tLocalMidnight)
+		ts, entry  = archive.getData(age=time.time()-tLocalMidnight+60)
 		print time.time()-ts, time.time() - tLocalMidnight
 		rainDay = entry['rainfall']
 		
