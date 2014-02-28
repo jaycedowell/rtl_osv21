@@ -129,7 +129,7 @@ def main(args):
 		output['windchill'] = computeWindchill(output['temperature'], output['average'])
 		
 	# Report
-	if 'indoorTemperature' in output.keys():
+	if 'comfortLevel' in output.keys():
 		print "Indoor Conditions:"
 		print " -> %.1f F with %i%% humidity (%s)" % (temp_C2F(output['indoorTemperature']), output['indoorHumidity'], output['comfortLevel'])
 		print " -> dew point is %.1f F" % (temp_C2F(output['indoorDewpoint']),)
