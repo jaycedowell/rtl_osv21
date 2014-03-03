@@ -9,6 +9,7 @@ This script takes no arguments.
 """
 
 import sys
+import time
 
 from config import CONFIG_FILE, loadConfig
 from database import Archive
@@ -22,7 +23,7 @@ def main(args):
 	config = loadConfig(CONFIG_FILE)
 	
 	# Record some data and extract the bits on-the-fly
-	bits = readRTL(config['duration'])
+	bits = readRTL(int(config['duration']))
 	
 	# Read in the most recent state
 	db = Archive()

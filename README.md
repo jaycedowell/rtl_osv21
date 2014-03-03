@@ -8,7 +8,7 @@ Requirements
 ------------
  * Python >=2.7 and <3.0
  * sqlite3
- * rtl_sdr from http://sdr.osmocom.org/trac/wiki/rtl-sdr
+ * librtlsdr from http://sdr.osmocom.org/trac/wiki/rtl-sdr
 
 Usage
 -----

@@ -293,7 +293,7 @@ def parseBitStream(bits, elevation=0.0, inputDataDict=None, verbose=False):
 	# Setup the output dictionary
 	output = {}
 	if inputDataDict is not None:
-		for key,vlaue in inputDataDict.iteritems():
+		for key,value in inputDataDict.iteritems():
 			output[key] = value
 			
 	# Find the packets and save the output
