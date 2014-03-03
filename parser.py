@@ -183,6 +183,21 @@ def _parseTHGR968(data):
 	
 	return output
 	
+def _parseUVR128(data):
+	"""
+	Parse the data section of a RVY128 UV sensor packet and return a dictionary of the
+	values recovered.
+	"""
+	
+	output = {'uvIndex': -99}
+	
+	# UV index
+	uv = nivvles2value(data[0:8])
+	uv = 10*uv[1] + uv[0]
+	output['uvIndex'] = uv
+	
+	return output
+	
 def parsePacketv21(packet, wxData=None, verbose=False):
 	"""
 	Given a sequence of bits try to find a valid Oregon Scientific v2.1 
@@ -196,6 +211,7 @@ def parsePacketv21(packet, wxData=None, verbose=False):
 	  * 3D00 - WGR968  - Anemometer
 	  * 1D20 - THGR268 - Outdoor temperature/humidity
 	  * 1D30 - THGR968 - Outdoor temperature/humidity
+	  * EC70 - UVR128  - UV sensor
 	"""
 	
 	# Check for a valid preamble
@@ -224,6 +240,9 @@ def parsePacketv21(packet, wxData=None, verbose=False):
 	elif sensor == '1d30':
 		nm = 'THGR968'
 		ds = 80
+	elif sensor == 'ec70':
+		nm = 'UVR128'
+		ds = 68
 	else:
 		## Unknown - fail
 		return False, 'Invalid', -1, {}
@@ -266,6 +285,8 @@ def parsePacketv21(packet, wxData=None, verbose=False):
 		output = _parseTHGR268(data)
 	elif nm == 'THGR968':
 		output = _parseTHGR968(data)
+	elif nm == 'UVR128':
+		output = _parseUVR128(data)
 	else:
 		return False, 'Invalid', -1, {}
 		
