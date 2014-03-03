@@ -25,7 +25,8 @@ class Archive(object):
 				 'gust': 'windGust', 
 				 'direction': 'windDir',
 				 'rainrate': 'rainRate', 
-				 'rainfall': 'rain',}
+				 'rainfall': 'rain',
+				 'uvIndex': 'uv'}
 				 
 	def __init__(self):
 		self._dbName = os.path.join(os.path.dirname(__file__), 'archive', 'wx-data.db')
@@ -87,7 +88,8 @@ class Archive(object):
 		          'indoorTemperature': row['inTemp'], 'indoorHumidity': row['inHumidity'], 
 		          'indoorDewpoint': row['inDewpoint'], 'pressure': row['barometer'], 
 		          'rainrate': row['rainRate'], 'rainfall': row['rain'], 
-		          'altTemperature': [], 'altHumdity': [], 'altDewpoint': []}
+		          'altTemperature': [], 'altHumdity': [], 'altDewpoint': [],
+			  'uvIndex': row['uv']}
 		for i in xrange(1, 5):
 			output['altTemperature'].append( row['outTemp%i' % i] if row['outTemp%i' % i] != -99 else None )
 			output['altHumdity'].append( row['outHumidity%i' % i] if row['outHumidity%i' % i] != -99 else None )

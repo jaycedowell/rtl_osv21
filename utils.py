@@ -307,6 +307,13 @@ def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=Fa
 	except KeyError:
 		pass
 		
+	## Add in the UV index
+	try:
+		if data['uvIndex'] >= 0:
+			pwsData['UV'] = data['uvIndex']
+	except KeyError:
+		pass
+		
 	## Add in the rain values
 	if archive is not None:
 		### Ouch...

@@ -26,5 +26,6 @@ CREATE TABLE wx (
 	outDewpoint2 REAL DEFAULT -99.0,
 	outDewpoint3 REAL DEFAULT -99.0,
 	outDewpoint4 REAL DEFAULT -99.0,
-	windchill REAL DEFAULT -99.0);
+	windchill REAL DEFAULT -99.0,
+	uv INTEGER DEFAULT -99);
 COMMIT;
