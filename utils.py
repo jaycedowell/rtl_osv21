@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
+
 """
 Various utility functions needed by rtl_osv21.py
 """
 
-import re
 import math
 import time
 import urllib
@@ -14,8 +15,7 @@ __all__ = ["length_m2ft", "length_ft2m", "length_mm2in", "length_in2mm",
 		   "temp_C2F", "temp_F2C", 
 		   "pressure_mb2inHg", "pressure_inHg2mb", 
 		   "computeDewPoint", "computeWindchill", "computeSeaLevelPressure", 
-		   "loadConfig", "wuUploader", 
-		   "__version__", "__all__"]
+		   "generateWeatherReport", "wuUploader", "__version__", "__all__"]
 
 
 def length_m2ft(value):
@@ -204,56 +204,60 @@ def computeSeaLevelPressure(press, elevation, inHg=False, ft=False):
 	return press
 
 
-def loadConfig(filename):
+def generateWeatherReport(output, includeIndoor=True):
 	"""
-	Read in the configuration file and return a dictionary of the 
-	parameters.
+	Given a data dictionary created by parseBitStream, generate a string 
+	that contains the current weather conditions.
 	"""
 	
-	# RegEx for parsing the configuration file lines
-	configRE = re.compile(r'\s*:\s*')
-
-	# Initial values
-	config = {'verbose': False,
-			  'rtlsdr': None,
-			  'duration': 90.0, 
-			  'retainData': False,  
-		  	  'useTimeout': False, 
-			  'includeIndoor': False, 
-			  'elevation': 0.0}
-
-	# Parse the file
-	try:
-		fh = open(filename, 'r')
-		for line in fh:
-			line = line.replace('\n', '')
-			## Skip blank lines
-			if len(line) < 3:
-				continue
-			## Skip comments
-			if line[0] == '#':
-				continue
-				
-			## Update the dictionary
-			key, value = configRE.split(line, 1)
-			config[key] = value
-		fh.close()
+	wxReport = ""
+	
+	# Indoor
+	if includeIndoor and 'indoorTemperature' in output.keys():
+		wxReport += "Indoor Conditions:\n"
+		wxReport += " -> %.1f F with %i%% humidity\n" % (temp_C2F(output['indoorTemperature']), output['indoorHumidity'])
+		wxReport += " -> dew point is %.1f F\n" % (temp_C2F(output['indoorDewpoint']),)
+		wxReport += " -> barometric pressure is %.2f in-Hg\n" % pressure_mb2inHg(output['pressure'])
+		if output['comfortLevel'] != 'unknown':
+			wxReport += " -> comfort level is %s\n" % output['comfortLevel']
+		wxReport += "\n"
+	
+	if 'temperature' in output.keys():
+		wxReport += "Outdoor Conditions:\n"
+		wxReport += " -> %.1f F with %i%% humidity\n" % (temp_C2F(output['temperature']), output['humidity'])
+		wxReport += " -> dew point is %.1f F\n" % (temp_C2F(output['dewpoint']),)
+		## Windchill?
+		if 'windchill' in output.keys():
+			if output['windchill'] != output['temperature']:
+				wxReport += " -> windchill is %.1f F\n" % (temp_C2F(output['windchill']),)
+		## Alternate temperature/humidity/dew point values?
+		if 'altTemperature' in output.keys():
+			for i in xrange(4):
+				if output['altTemperature'][i] is not None:
+					t, h, d = output['altTemperature'][i], output['altHumidity'][i], output['altDewpoint'][i]
+					wxReport += "    #%i: %.1f F with %i%% humidity\n" % (i+1, temp_C2F(t), h)
+					wxReport += "         dew point is %.1f F\n" % (temp_C2F(d),)
+		wxReport += "\n"
 		
-		# Float type conversion
-		config['duration'] = float(config['duration'])
-		config['elevation'] = float(config['elevation'])
+	if 'average' in output.keys():
+		wxReport += "Wind:\n"
+		wxReport += "-> average %.1f mph @ %i degrees\n" % (speed_ms2mph(output['average']), output['direction'])
+		wxReport += "-> gust %.1f mph\n" % speed_ms2mph(output['gust'])
+		wxReport += "\n"
 		
-		# Boolean type conversions
-		config['verbose'] = bool(config['verbose'])
-		config['useTimeout'] = bool(config['useTimeout'])
-		config['retainData'] = bool(config['retainData'])
-		config['includeIndoor'] = bool(config['includeIndoor'])
+	if 'rainrate' in output.keys():
+		wxReport += "Rainfall:\n"
+		wxReport += " -> %.2f in/hr, %.2f in total\n" % (length_mm2in(output['rainrate']), length_mm2in(output['rainfall']))
+		wxReport += "\n"
 		
-	except IOError:
-		pass
+	if 'forecast' in output.keys():
+		if output['forecast'] != 'unknown':
+			wxReport += "Forecast:\n"
+			wxReport += " -> %s\n" % output['forecast']
+			wxReport += "\n"
 		
 	# Done
-	return config
+	return wxReport
 
 
 def wuUploader(id, password, data, archive=None, includeIndoor=False, verbose=False):

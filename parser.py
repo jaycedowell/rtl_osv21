@@ -1,11 +1,14 @@
+# -*- coding: utf-8 -*-
+
 """
 Function for parsing data packets from Oregon Scientific weather sensors
 """
 
-from utils import computeDewPoint, computeSeaLevelPressure
+from utils import computeDewPoint, computeWindchill, computeSeaLevelPressure
 
-__version__ = "0.1"
-__all__ = ["nibbles2value", "computeChecksum", "parsePacketv21", "__version__", "__all__"]
+__version__ = '0.1'
+__all__ = ['nibbles2value', 'computeChecksum', 'parsePacketv21', 'parseBitStream', 
+           '__version__', '__all__']
 
 
 def nibbles2value(nibbles):
@@ -193,9 +196,6 @@ def parsePacketv21(packet, wxData=None, verbose=False):
 	  * 3D00 - WGR968  - Anemometer
 	  * 1D20 - THGR268 - Outdoor temperature/humidity
 	  * 1D30 - THGR968 - Outdoor temperature/humidity
-	
-	PWS Keyword List:
-	  * http://wiki.wunderground.com/index.php/PWS_-_Upload_Protocol
 	"""
 	
 	# Check for a valid preamble
@@ -275,3 +275,83 @@ def parsePacketv21(packet, wxData=None, verbose=False):
 		
 	# Return the packet validity, channel, and data dictionary
 	return True, nm, channel, output
+
+
+def parseBitStream(bits, elevation=0.0, inputDataDict=None, verbose=False):
+	"""
+	Given a sequence of bits from readRTL/readRTLFile, find all of the 
+	valid Oregon Scientific v2.1 packets and return the data contained
+	within the packets as a dictionary.  In the process, compute various
+	derived quantities (dew point, windchill, and sea level corrected
+	pressure).
+	
+	.. note::
+		The sea level corrected pressure is only compute if the elevation 
+		(in meters) is set to a non-zero value.  
+	"""
+	
+	# Setup the output dictionary
+	output = {}
+	if inputDataDict is not None:
+		for key,vlaue in inputDataDict.iteritems():
+			output[key] = value
+			
+	# Find the packets and save the output
+	i = 0
+	while i < len(bits)-32:
+		## Check for a valid preamble (and its logical negation counterpart)
+		if sum(bits[i:i+32:2]) == 16 and sum(bits[i+1:i+1+32:2]) == 0:
+			### Assume nothing
+			valid = False
+			
+			### Packet #1
+			packet = bits[i+0::2]
+			try:
+				valid, sensorName, channel, sensorData = parsePacketv21(packet, verbose=verbose)
+			except IndexError:
+				pass
+				
+			if not valid:
+				### Packet #2
+				packet = bits[i+1::2]
+				try:
+					valid, sensorName, channel, sensorData = parsePacketv21(packet, verbose=verbose)
+				except IndexError:
+					pass
+				
+			### Data reorganization and computed quantities
+			if valid:
+				#### Dew point - indoor and output
+				if sensorName in ('BHTR968', 'THGR268', 'THGR968'):
+					sensorData['dewpoint'] = computeDewPoint(sensorData['temperature'], sensorData['humidity'])
+				#### Sea level corrected barometric pressure
+				if sensorName in ('BHTR968',) and elevation != 0.0:
+					sensorData['pressure'] = computeSeaLevelPressure(sensorData['pressure'], elevation)
+				#### Disentangle the indoor temperatures from the outdoor temperatures
+				if sensorName == 'BHTR968':
+					for key in ('temperature', 'humidity', 'dewpoint'):
+						newKey = 'indoor%s' % key.capitalize()
+						sensorData[newKey] = sensorData[key]
+						del sensorData[key]
+				#### Multiplex the THGR268 values
+				for key in sensorData.keys():
+					if key in ('temperature', 'humidity', 'dewpoint'):
+						if sensorName == 'THGR968':
+							output[key] = sensorData[key]
+						else:
+							try:
+								output['alt%s' % key.capitalize()][channel-1] = sensorData[key]
+							except KeyError:
+								output['alt%s' % key.capitalize()] = [None, None, None, None]
+								output['alt%s' % key.capitalize()][channel-1] = sensorData[key]
+					else:
+						output[key] = sensorData[key]
+						
+		i += 1
+		
+	# Compute combined quantities
+	if 'temperature' in output.keys() and 'average' in output.keys():
+		output['windchill'] = computeWindchill(output['temperature'], output['average'])
+		
+	# Done
+	return output
