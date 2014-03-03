@@ -192,7 +192,7 @@ def _parseUVR128(data):
 	output = {'uvIndex': -99}
 	
 	# UV index
-	uv = nivvles2value(data[0:8])
+	uv = nibbles2value(data[0:8])
 	uv = 10*uv[1] + uv[0]
 	output['uvIndex'] = uv
 	
