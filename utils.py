@@ -95,7 +95,7 @@ def pressure_inHg2mb(value):
 def computeDewPoint(temp, humidity, degF=False):
 	"""
 	Given a temperature and a relative humidity, calculate the dew point
-	from the Magnus formula.
+	following http://en.wikipedia.org/wiki/Dew_point
 	
 	Note::
 		Temperatures can be be supplied either as Celsius (default) or 
@@ -109,12 +109,12 @@ def computeDewPoint(temp, humidity, degF=False):
 	if degF:
 		temp = temp_F2C(temp)
 		
-	# Compute dew point from the Magnus formula
-	# See: http://en.wikipedia.org/wiki/Dew_point
-	b = 17.67
-	c = 243.5
-	dewpt = math.log(humidity/100.0) + b*temp/(c + temp)
-	dewpt = c*dewpt / (b - dewpt)
+	# Compute dew point from http://en.wikipedia.org/wiki/Dew_point
+	a = 6.112	# millibar
+	b = 17.67	# unitless
+	c = 243.5	# degrees C
+	Pa = a*math.exp(math.log(humidity/100.0) + b*temp/(c + temp))
+	dewpt = c*math.log(Pa/a)/(b - math.log(Pa/a))
 	
 	# More back to Fahrenheit, if needed
 	if degF:
