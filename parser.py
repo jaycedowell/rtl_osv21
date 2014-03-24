@@ -115,7 +115,7 @@ def _parseRGR968(data):
 	
 	# Total rainfall in mm
 	rtotl = nibbles2value(data[12:32])
-	output['rainfall'] = 1000*rtotl[4] + 100*rtotl[3] + 10*rtotl[2] + rtotl[1] + rtotl[0]
+	output['rainfall'] = 1000*rtotl[4] + 100*rtotl[3] + 10*rtotl[2] + rtotl[1] + 0.1*rtotl[0]
 	
 	return output
 
