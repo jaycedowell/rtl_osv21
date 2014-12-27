@@ -14,7 +14,7 @@ Usage
 -----
   1) Build the decoder.so extension via 'make'
   
-  2) Create the initial database with the 'archive' directory using the 'initDB.sh' script
+  2) Create the initial database in the 'archive' directory using the 'initDB.sh' script
   
   3) Update the configuration file 'rtl_osv21.config'
   
