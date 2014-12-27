@@ -14,9 +14,11 @@ Usage
 -----
   1) Build the decoder.so extension via 'make'
   
-  2) Update the configuration file 'rtl_osv21.config'
+  2) Create the initial database with the 'archive' directory using the 'initDB.sh' script
   
-  3) Run the script via ./rtl_osv21.py
+  3) Update the configuration file 'rtl_osv21.config'
+  
+  4) Run the script via ./rtl_osv21.py
 
 Supported Sensors
 -----------------
