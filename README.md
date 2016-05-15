@@ -7,8 +7,13 @@ WUnderground PWS site.
 Requirements
 ------------
  * Python >=2.7 and <3.0
- * sqlite3
  * librtlsdr from http://sdr.osmocom.org/trac/wiki/rtl-sdr
+ * libusb 1.0
+ * sqlite3
+
+On Debian based systems it is necessary to ensure the -dev packages of the dependencies
+are installed, i.e.
+apt-get install python-dev libusb-1.0-0-dev librtlsdr-dev
 
 Usage
 -----
@@ -25,7 +30,7 @@ Supported Sensors
  * 5D60 - BHTR968 - Indoor temperature/humidity/pressure
  * 2D10 - RGR968  - Rain gauge
  * 3D00 - WGR968  - Anemometer
- * 1D20 - THGR268 - Outdoor temperature/humidity
+ * 1D20 - THGR268 - Outdoor temperature/humidity (also compatible with THGN132N)
  * 1D30 - THGR968 - Outdoor temperature/humidity
 
 The data formats used for these sensors come from:
