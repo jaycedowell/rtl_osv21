@@ -258,6 +258,7 @@ static PyObject *readRTL(PyObject *self, PyObject *args) {
 	}
 
 	// Setup the signal handler	so that we can exit the callback function
+	do_exit = 0;
 	sigact.sa_handler = sighandler;
 	sigemptyset(&sigact.sa_mask);
 	sigact.sa_flags = 0;
@@ -308,10 +309,10 @@ static PyObject *readRTL(PyObject *self, PyObject *args) {
 	}
 	
 	/*
-	This looks like bad form but, for some reason, calling 'rtlsdr_close' 
-	results in a segmentation fault for Python.  What's up with that?
+	If the call to rtlsdr_close() here generates a segfault then try
+	updating to a newer libusb.
 	*/
-	//rtlsdr_close(dev);
+	rtlsdr_close(dev);
 	
 	// Cleanup
 	free(raw);
