@@ -152,7 +152,7 @@ def _parseTHGR268(data):
 	# Temperature in C
 	temp = nibbles2value(data[0:12])
 	temp = 10*temp[2] + temp[1] + 0.1*temp[0]
-	if sum(data[64:68]) > 0:
+	if sum(data[12:16]) > 0:
 		temp *= -1
 	output['temperature'] = temp
 		
